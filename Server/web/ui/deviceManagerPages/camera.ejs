@@ -1,0 +1,116 @@
+<div class="ui segment">
+    <div class="ui top aligned stackable grid">
+        <div class="row">
+            <div class="twelve wide column">
+                <h3 class="ui header">Available Cameras</h3>
+            </div>
+            <div class="four wide column right aligned">
+                <button class="ui violet button" onclick="refreshCameraList(this)">
+                    <i class="sync alternate icon"></i>
+                    Refresh List
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="sixteen wide column">
+                <% if (pageData.cameras && pageData.cameras.length > 0) { %>
+                    <div class="ui relaxed list">
+                        <% pageData.cameras.forEach((camera) => { %>
+                            <div class="item">
+                                <i class="large camera icon"></i>
+                                <div class="content">
+                                    <div class="header">Camera <%= camera.id %> &mdash; <%= camera.name %></div>
+                                    <div class="description">
+                                        <button class="ui small blue button" data-camera-id="<%= camera.id %>" onclick="captureFromCamera(this)">
+                                            <i class="camera icon"></i>
+                                            Capture Photo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div class="ui warning message">
+                        <div class="header">No cameras detected</div>
+                        <p>Refresh the list to query the device for available cameras.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%
+    const cameraLookup = {};
+    if (Array.isArray(pageData.cameras)) {
+        pageData.cameras.forEach((cam) => {
+            cameraLookup[cam.id] = cam.name;
+        });
+    }
+    const sortedShots = Array.isArray(pageData.shots)
+        ? pageData.shots.slice().sort((a, b) => {
+            const aTime = Number(a.time || 0);
+            const bTime = Number(b.time || 0);
+            return bTime - aTime;
+        })
+        : [];
+%>
+
+<div class="ui segment">
+    <div class="ui clearing segment">
+        <h3 class="ui header">Snapshots</h3>
+        <p>New captures will appear here once the device uploads the image.</p>
+    </div>
+
+    <% if (sortedShots.length === 0) { %>
+        <div class="ui placeholder segment">
+            <div class="ui icon header">
+                <i class="images outline icon"></i>
+                No snapshots have been captured yet.
+            </div>
+        </div>
+    <% } else { %>
+        <div class="ui three stackable cards">
+            <% sortedShots.forEach((shot) => {
+                const captured = new Date(Number(shot.time || Date.now()));
+                const cameraIdLabel = (shot.cameraId !== undefined && shot.cameraId !== null) ? shot.cameraId : '?';
+                const cameraName = cameraLookup[shot.cameraId] || ('Camera ' + cameraIdLabel);
+                const fileSizeKb = shot.size ? Math.round(shot.size / 1024) : null;
+            %>
+                <div class="card">
+                    <div class="image" style="background: #1b1c1d; text-align: center;">
+                        <img src="<%= shot.path %>" alt="Snapshot" style="max-height: 220px; object-fit: contain;">
+                    </div>
+                    <div class="content">
+                        <div class="header"><%= cameraName %></div>
+                        <div class="meta"><%= captured.toLocaleString('en-GB', { timeZone: 'UTC' }) %> UTC</div>
+                        <div class="description">
+                            <p><strong>File</strong>: <%= shot.fileName %></p>
+                            <% if (fileSizeKb) { %>
+                                <p><strong>Size</strong>: <%= fileSizeKb %> KB</p>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="extra content">
+                        <div class="ui two buttons">
+                            <a href="<%= shot.path %>" target="_blank" class="ui button">View</a>
+                            <a href="<%= shot.path %>" download="<%= shot.fileName %>" class="ui green button">Download</a>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } %>
+</div>
+
+<script>
+    function refreshCameraList(element) {
+        updateButton(element, '0xCA', { action: 'list' });
+    }
+
+    function captureFromCamera(element) {
+        const cameraId = element.dataset.cameraId;
+        updateButton(element, '0xCA', { action: 'capture', id: cameraId });
+    }
+</script>

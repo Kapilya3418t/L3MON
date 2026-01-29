@@ -1,0 +1,113 @@
+<div class="ui segment">
+    <div class="ui secondary menu">
+        <div class="right menu">
+            <button onclick="updateButton(this, '0xWI')" class="ui blue button"> <i
+                    class="icon sync"></i>Update</button>
+        </div>
+    </div>
+    <%
+        const wifiStatus = pageData.status || {};
+        const wifiNow = Array.isArray(pageData.now) ? pageData.now : [];
+        const wifiLog = Array.isArray(pageData.log) ? pageData.log : [];
+    %>
+
+    <% if (wifiStatus.lastError) { %>
+        <div class="ui negative message">
+            <div class="header">Wi-Fi error</div>
+            <p><%= wifiStatus.lastError %></p>
+        </div>
+    <% } %>
+
+    <% if (wifiStatus.lastUpdated) { %>
+        <div class="ui tiny grey message">
+            <i class="history icon"></i>
+            Last scan: <%= new Date(wifiStatus.lastUpdated).toLocaleString('en-GB', { timeZone: 'UTC' }) %>
+            (<%= wifiStatus.networkCount || 0 %> networks)
+            <% if (wifiStatus.scanRequested !== undefined) { %>
+                • Scan requested: <%= wifiStatus.scanRequested ? 'yes' : 'no' %>
+            <% } %>
+            <% if (wifiStatus.lastScanTimestamp) { %>
+                • Device timestamp: <%= new Date(Number(wifiStatus.lastScanTimestamp)).toLocaleString('en-GB', { timeZone: 'UTC' }) %>
+            <% } %>
+        </div>
+    <% } %>
+        <% if (wifiStatus.locationEnabled === false || wifiStatus.hasFineLocation === false) { %>
+            <div class="ui warning message">
+                <div class="header">Location access required</div>
+                <p>Android blocks Wi-Fi scans when location is disabled or missing. Ask the user to enable location services and grant location permissions to the client.</p>
+            </div>
+        <% } %>
+
+    <h3 class="ui grey dividing header">Current</h3>
+
+    <table class="ui celled table">
+        <thead>
+            <tr>
+                <th>SSID</th>
+                <th>BSSID</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!wifiNow.length) { %>
+                <tr>
+                    <td colspan="2">
+                        <div class="ui placeholder segment">
+                            <div class="ui icon header">
+                                <i class="wifi icon"></i>
+                                No current Wi-Fi networks reported.
+                            </div>
+                            <p class="ui small text">Ask the client to enable Wi-Fi/location and run the scan again.</p>
+                        </div>
+                    </td>
+                </tr>
+            <% } else { %>
+                <% wifiNow.forEach((wifi) => { %>
+                <tr>
+                    <td><%= wifi.SSID %></td>
+                    <td><%= wifi.BSSID %></td>
+                </tr>
+                <% }) %>
+            <% } %>
+        </tbody>
+    </table>
+
+
+    <h3 class="ui grey dividing header">History</h3>
+
+    <table class="ui celled table">
+        <thead>
+            <tr>
+                <th>SSID</th>
+                <th>BSSID</th>
+                <th>Discovered On</th>
+                <th>Last Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!wifiLog.length) { %>
+                <tr>
+                    <td colspan="4">
+                        <div class="ui message">
+                            <div class="header">No historical Wi-Fi data.</div>
+                            <p>Run a fresh scan to start building the history.</p>
+                        </div>
+                    </td>
+                </tr>
+            <% } else { %>
+            <% 
+            wifiLog.forEach((wifi) => { 
+                let firstSeen = new Date(wifi.firstSeen);
+                let lastSeen = new Date(wifi.lastSeen);
+                %>
+            <tr>
+                <td><%= wifi.SSID %></td>
+                <td><%= wifi.BSSID %></td>
+                <td><%= firstSeen.toLocaleString('en-GB', { timeZone: 'UTC' }) %></td>
+                <td><%= lastSeen.toLocaleString('en-GB', { timeZone: 'UTC' }) %></td>
+            </tr>
+            <% }) %>
+            <% } %>
+        </tbody>
+    </table>
+
+</div>

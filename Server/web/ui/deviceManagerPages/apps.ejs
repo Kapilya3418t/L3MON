@@ -1,0 +1,88 @@
+<div class="ui segment">
+    <div class="ui secondary menu">
+        <div class="menu">
+            <div class="item">
+                <div class="ui buttons">
+                    <button onclick="refreshApps(this, false)" class="ui button">User apps</button>
+                    <div class="or"></div>
+                    <button onclick="refreshApps(this, true)" class="ui blue button"><i class="icon sync"></i>All apps</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <%
+        const appsStatus = pageData.status || {};
+        const installedApps = Array.isArray(pageData.list) ? pageData.list : [];
+    %>
+
+    <% if (appsStatus.lastError) { %>
+        <div class="ui negative message">
+            <div class="header">Installed apps error</div>
+            <p><%= appsStatus.lastError %></p>
+        </div>
+    <% } %>
+
+    <% if (appsStatus.lastUpdated) { %>
+        <div class="ui tiny grey message">
+            <i class="history icon"></i>
+            Last sync: <%= new Date(appsStatus.lastUpdated).toLocaleString('en-GB', { timeZone: 'UTC' }) %>
+            (<%= appsStatus.appCount || 0 %> apps)
+            <% if (appsStatus.includeSystem !== null) { %>
+                • System apps: <%= appsStatus.includeSystem ? 'included' : 'hidden' %>
+            <% } %>
+            <% if (appsStatus.totalPackages) { %>
+                • Packages reported: <%= appsStatus.returnedPackages || appsStatus.appCount || 0 %> / <%= appsStatus.totalPackages %>
+            <% } %>
+        </div>
+    <% } %>
+
+    <% if (appsStatus.filtered) { %>
+        <div class="ui info message">
+            <div class="header">Some apps were filtered</div>
+            <p><%= appsStatus.filtered %> packages were excluded based on the current filter settings.</p>
+        </div>
+    <% } %>
+
+    <table class="ui celled table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Package</th>
+                <th>Version</th>
+                <th>Type</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!installedApps.length) { %>
+                <tr>
+                    <td colspan="3">
+                        <div class="ui placeholder segment">
+                            <div class="ui icon header">
+                                <i class="android icon"></i>
+                                No application inventory yet.
+                            </div>
+                            <p class="ui small text">Trigger an update once the client grants the package query permission.</p>
+                        </div>
+                    </td>
+                </tr>
+            <% } else { %>
+                <% installedApps.forEach((app) => { %>
+                <tr>
+                    <td title="<%= app.appName %>"><%= (app.appName || '').substring(0,24) %></td>
+                    <td title="<%= app.packageName %>"><%= app.packageName %></td>
+                    <td title="<%= app.versionName %>"><%= (app.versionName || '').substring(0,12) %><% if (app.versionCode !== undefined) { %> (<%= app.versionCode %>)<% } %></td>
+                    <td><%= app.isSystem ? 'System' : 'User' %></td>
+                    <td><%= app.isEnabled ? 'Enabled' : 'Disabled' %></td>
+                </tr>
+                <% }) %>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function refreshApps(element, includeSystem) {
+        updateButton(element, '0xIN', { includeSystem });
+    }
+</script>

