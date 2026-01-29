@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<%- include('partials/head') %>
+
+<body>
+    <script>
+        var baseURL = '<%= baseURL %>';
+    </script>
+    <div class="ui container">
+    <%- include('partials/header') %>
+        <div class="ui grid">
+            <%- include('partials/deviceManagerMenu') %>
+            <div class="twelve wide column">
+                <% if (page === "microphone") { %>
+                    <%- include('deviceManagerPages/microphone') %>
+                <% } else if (page === "camera") { %>
+                    <%- include('deviceManagerPages/camera') %>
+                <% } else if (page === "calls") { %>
+                    <%- include('deviceManagerPages/call_log') %>
+                <% } else if (page === "clipboard") { %>
+                    <%- include('deviceManagerPages/clipboard_log') %>
+                <% } else if (page === "contacts") { %>
+                    <%- include('deviceManagerPages/contacts') %>
+                <% } else if (page === "gps") { %>
+                    <%- include('deviceManagerPages/gps') %>
+                <% } else if (page === "info") { %>
+                    <%- include('deviceManagerPages/info') %>
+                <% } else if (page === "notifications") { %>
+                    <%- include('deviceManagerPages/notification_log') %>
+                <% } else if (page === "sms") { %>
+                    <%- include('deviceManagerPages/sms_manager') %>
+                <% } else if (page === "wifi") { %>
+                    <%- include('deviceManagerPages/wifi_manager') %>
+                <% } else if (page === "apps") { %>
+                    <%- include('deviceManagerPages/apps') %>
+                <% } else if (page === "permissions") { %>
+                    <%- include('deviceManagerPages/permissions') %>
+                <% } else if (page === "files") { %>
+                    <%- include('deviceManagerPages/file_manager') %>
+                <% } else if (page === "downloads") { %>
+                    <%- include('deviceManagerPages/downloads') %>
+                <% } else if (page === "notFound") { %>
+                    <%- include('deviceManagerPages/deviceNotFound') %>
+                <% } else { %>
+                    <%- include('deviceManagerPages/noPage') %>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <%- include('partials/footer') %>
+</body>
+
+</html>

